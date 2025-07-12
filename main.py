@@ -1,6 +1,7 @@
 from authenticator.auth import GmailAuthenticator
 from gmail_manager.label_manager import LabelManager
 from gmail_manager.email_manager import EmailManager
+from order_tracking.parser import parse_order_info
 
 
 def main():
@@ -30,6 +31,8 @@ def main():
             html_body, success = email_manager.extract_html_body(detail)
             if success:
                 success_count += 1
+                order_info = parse_order_info(html_body)
+                print(order_info)
             else:
                 fail_count += 1
             # print(f"HTML body for {msg['entry_id']} (ID: {msg['id']}):")
