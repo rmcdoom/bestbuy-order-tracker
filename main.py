@@ -1,6 +1,8 @@
 from authenticator.auth import GmailAuthenticator
 from gmail_manager.label_manager import LabelManager
 from gmail_manager.email_manager import EmailManager
+from order_tracking.tracker import OrderTracker
+
 
 
 def main():
@@ -31,9 +33,18 @@ def main():
     
     if label_id:
         email_manager = EmailManager(creds)
-        email_manager.process_label_orders(label_id)
+        orders = email_manager.process_label_orders(label_id)
     else:
         print("Label 'Best Buy Order Confirms' not found.")
+    
+    tracker = OrderTracker(email_manager, label_manager)
+
+    for order in orders:  # orders is a list of parsed order_info dicts
+        status = tracker.get_order_status(order['order_number'])
+        order['status'] = status
+        print(order)
+
+    
 
 if __name__ == "__main__":
     main()

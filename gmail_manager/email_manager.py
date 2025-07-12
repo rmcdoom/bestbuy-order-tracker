@@ -10,7 +10,7 @@ class EmailManager:
         self.creds = creds
         self.service = build('gmail', 'v1', credentials=self.creds)
 
-    def get_messages_by_label(self, label_id, user_id='me', max_results=100):
+    def get_messages_by_label(self, label_id, user_id='me', max_results=500):
         """
         Fetches messages with the specified label ID.
         Returns a list of dicts: [{'id': ..., 'threadId': ...}, ...]
@@ -79,13 +79,14 @@ class EmailManager:
         success_count = 0
         fail_count = 0
         failed_messages = []
+        orders = []
         for msg in messages:
             detail = self.get_message_details(msg['id'])
             html_body, success = self.extract_html_body(detail)
             if success:
                 success_count += 1
                 order_info = parse_order_info(html_body)
-                print(order_info)
+                orders.append(order_info)
             else:
                 fail_count += 1
                 failed_messages.append(msg)
@@ -96,3 +97,23 @@ class EmailManager:
             print("\nFailed messages:")
             for msg in failed_messages:
                 print(f"  entry_id: {msg['entry_id']}, id: {msg['id']}, threadId: {msg['threadId']}")
+        return orders
+    
+    def search_messages_by_order_number(self, label_id, order_number, user_id='me', max_results=50):
+        """
+        Searches for messages in a label that contain the order number in the subject or body.
+        Returns a list of matching message dicts.
+        """
+        try:
+            query = f'"{order_number}"'
+            response = self.service.users().messages().list(
+                userId=user_id,
+                labelIds=[label_id],
+                q=query,
+                maxResults=max_results
+            ).execute()
+            messages = response.get('messages', [])
+            return messages
+        except Exception as e:
+            print(f"An error occurred while searching messages: {e}")
+            return []
