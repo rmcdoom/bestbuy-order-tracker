@@ -20,16 +20,33 @@ class GmailAuthenticator:
             pickle.dump(self.creds, token_file)
 
     def authenticate(self):
-        self.load_credentials()
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    self.credentials_path, self.scopes)
-                self.creds = flow.run_local_server(port=0)
-            self.save_credentials()
-        return self.creds
+        try:
+            # Load existing credentials if available
+            self.load_credentials()
+
+            # If no valid credentials, perform the OAuth flow
+            if not self.creds or not self.creds.valid:
+                # If the credentials are expired, refresh them
+                if self.creds and self.creds.expired and self.creds.refresh_token:
+                    try:
+                        self.creds.refresh(Request())
+                    except Exception as e:
+                        print(f"Error refreshing credentials: {e}")
+                        self.creds = None
+                # If there are no valid credentials, run the OAuth flow
+                if not self.creds or not self.creds.valid:
+                    try:
+                        flow = InstalledAppFlow.from_client_secrets_file(
+                            self.credentials_path, self.scopes)
+                        self.creds = flow.run_local_server(port=0)
+                    except Exception as e:
+                        print(f"Error during OAuth flow: {e}")
+                        return None
+                self.save_credentials()
+            return self.creds
+        except Exception as e:
+            print(f"Authentication failed: {e}")
+            return None
 
 if __name__ == "__main__":
     SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']

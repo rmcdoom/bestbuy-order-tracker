@@ -1,5 +1,6 @@
 from googleapiclient.discovery import build
 
+
 class LabelManager:
     def __init__(self, creds):
         """
@@ -30,3 +31,4 @@ class LabelManager:
             if label['name'] == label_name:
                 return label['id']
         return None
+    

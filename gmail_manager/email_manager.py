@@ -1,4 +1,5 @@
 from googleapiclient.discovery import build
+from order_tracking.parser import parse_order_info
 import base64
 
 class EmailManager:
@@ -68,3 +69,30 @@ class EmailManager:
         except Exception as e:
             print(f"An error occurred while extracting HTML body: {e}")
             return None
+    
+    def process_label_orders(self, label_id):
+        """
+        Fetches messages for the given label, extracts and parses order info,
+        and prints results and stats.
+        """
+        messages = self.get_messages_by_label(label_id)
+        success_count = 0
+        fail_count = 0
+        failed_messages = []
+        for msg in messages:
+            detail = self.get_message_details(msg['id'])
+            html_body, success = self.extract_html_body(detail)
+            if success:
+                success_count += 1
+                order_info = parse_order_info(html_body)
+                print(order_info)
+            else:
+                fail_count += 1
+                failed_messages.append(msg)
+        total = success_count + fail_count
+        print(f"\nDecoded successfully: {success_count}/{total} ({(success_count/total)*100:.1f}%)")
+        print(f"Failed to decode: {fail_count}/{total} ({(fail_count/total)*100:.1f}%)")
+        if failed_messages:
+            print("\nFailed messages:")
+            for msg in failed_messages:
+                print(f"  entry_id: {msg['entry_id']}, id: {msg['id']}, threadId: {msg['threadId']}")
